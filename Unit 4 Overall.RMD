@@ -182,36 +182,23 @@ who %>%
 
 
 #Intrinio
-
 # Andrew Carpenter helpful link: http://old.r-fiddle.org/#/fiddle?id=n1shL0IB&version=1
 #Show access through URL: https://api-v2.intrinio.com/companies/AAPL?api_key=OmIxMWI5NWY3MzM0ZjdmN2U3ODJlOTBhNmU3OGQ0Zjlk
-
 library(httr)
 library(jsonlite)
-
 username = "cc092ea39fffe74b69f12976f4bfcd22"
 password = "7a8adcf931edb0766ff36fbb0b5cc421"
-
 base <- "https://api.intrinio.com/"
 endpoint <- "prices"
 stock <- "AAPL"
-
 call1 <- paste(base,endpoint,"?","ticker","=", stock, sep="")
-
 call1
-
 get_prices <- GET(call1, authenticate(username,password, type = "basic"))
-
 get_prices_text <- content(get_prices, "text")
-
 get_prices_json <- jsonlite::fromJSON(get_prices_text, flatten = TRUE)
-
 get_prices_df <- as.data.frame(get_prices_json$data)
-
 get_prices_df$date = as.Date(get_prices_df$date)
-
 par(mfrow = c(2,1))
-
 get_prices_df %>% ggplot(aes(x = date, y = adj_close))+ geom_line() + ggtitle("Adjusted Close")
 get_prices_df %>% ggplot(aes(x = date, y = adj_volume))+ geom_col() + ggtitle("Adjusted Volume")
 
@@ -227,6 +214,7 @@ access_token_secret = "mafeLvPRrI8SKBvyq4SJVozfx2wDD0rRkOrASfCoRJUyy"
 #Load twitteR
 
 # install.packages("twitteR")
+
 library(twitteR)
 setup_twitter_oauth(api_key,api_secret,access_token,access_token_secret)
   

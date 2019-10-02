@@ -1,5 +1,252 @@
-
+---
+title: "Unit 4"
+author: "Burk"
+date: "9/15/2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
 
 
 library(tidyverse)
+
+# OjhlOGE0NzQ1NzcyMjcwYzkyZDU5NzlkYTdiMDIwMWZm  <- Sandbox Key
+# OjI5ODY1MzM4YjAzZTFmNjlmZjk5OWI5YzdjMTg4Mzg3  <- Production Key
+
+
+
+############################################
+# install libraries
+library(XML) #xml_Parse
+library(dplyr)
+library(tidyr)
+library(stringi)
+library(rvest) #html_table, html_node
+library(ggplot2)
+library(RCurl) #getURL
+
+# retreive XML Data
+data <-getURL("https://d396qusza40orc.cloudfront.net/getdata%2Fdata%2Frestaurants.xml")
+doc <- xmlParse(data)
+
+# Get the name, zipcode, district and put it in a data frame called restaurants
+name <- xpathSApply(doc,"//name",xmlValue)
+zipcode <- xpathSApply(doc,"//zipcode",xmlValue)
+ccdistrict <- xpathSApply(doc,"//councildistrict",xmlValue)
+restaurants = data.frame(name,zipcode,ccdistrict)
+restaurants
+
+# find sushi restaurants by name
+length(grep("sushi",restaurants$name, ignore.case = TRUE))
+downtown <- restaurants %>% filter(ccdistrict == 11)
+length(grep("sushi",downtown$name, ignore.case = TRUE))
+
+# find the number of sushi restaurants
+grepl("sushi",restaurants$name)
+sum(grepl("sushi",restaurants$name, ignore.case = TRUE))
+
+# find how many in each district
+restaurants$ccdistrict = as.number(restaurants$ccdistrict)
+restaurants$ccdistrict = as.factor(restaurants$ccdistrict)
+
+# plot a nice colorful bar chart showing the number of restaurants in each district
+restaurants %>% ggplot(aes(x = ccdistrict, fill = ccdistrict)) + geom_bar() + ggtitle("Number of Restaurants in Baltimore by Council Disctrict Number")
+
+str(restaurants)
+
+#######################################################
+
+#twitteR
+
+api_key = "zb5rmNffIDnuJMVEM4bQLy61y"
+api_secret = "evJYW6xlz6ncJk5ahiZIARvEw1cMIXEffwerdcecnBEqJU61n0"
+access_token = "732762031749730305-iJumoEsW2vg187oefzjoS5kfyYUDHBJ"
+access_token_secret = "Zc3XGUtnAGUc5ITZy59N6lXn4OUmYXDyatbFrQKGmh3rM"
+
+#Load twitteR
+
+# install.packages("twitteR")
+# install.packages("Rcurl")
+
+library(tidyverse)
+library(twitteR)
+library(RCurl)
+library(ggplot2)
+
+# authenticate twitter account - keys are hidden from view on purpose.  They are private.
+setup_twitter_oauth(api_key,api_secret,access_token,access_token_secret)
+
+# Find tweets related to datascience and limit it to 100 tweets
+datasci <- searchTwitter("datascience", n = 100, lang ="en")
+datasci
+
+# Make a dataframe from the twitter search
+df <- twListToDF(datasci)
+
+# show the head of the dataframe
+head(df)
+
+# plot retweetCount by screenName
+df %>% filter(retweetCount > 10) %>% ggplot(aes(x = screenName, y = retweetCount, fill = "retweetCount")) + geom_col()
+
+
+
+
+
+# Get tweets for AMD
+tweets = searchTwitter("$amd", n = 10, lang = "en")
+
+# Locations that are trending
+trend = availableTrendLocations()
+
+# filter by United States
+UStrend <- trend %>% filter(country == "United States")
+
+#Get Trends for Location
+ getTrends(395269) # Caracas, Venezuela
+
+ getTrends(2487889) # San Diego, California
+
+ getTrends(44418) #  London, England
+
+getTrends(2388929) #  Dallas, US
+
+DallasTrends = getTrends(2388929) %>% select(name) #  Dallas, US
+
+DallasTrends[1:10,]
+
+
+
+rt <-searchTwitter("#rstats",n=300)
+
+rt <- search_tweets("rstats")
+
+rt <- rtweet::search_tweets("lang:en")
+
+#####################################################################
+
+
+
+#######################################################################
+
+# World Bank Development Indicators
+
+#Useful URL in explainging WDI XML and JSON data formats.
+#https://datahelpdesk.worldbank.org/knowledgebase/articles/898599-indicator-api-queries
+
+#Goal 1: Create a bar chart of topics relating to gdp.
+
+#search for reports with "gdp" in the description
+results = as.data.frame(WDIsearch("gdp"))
+
+#Many reports have more than 4 parts of the indicator
+# This is in contrast to this documentation: 
+#https://datahelpdesk.worldbank.org/knowledgebase/articles/201175-how-does-the-world-bank-code-its-indicators
+# We use a new function from a new package that we will cover later: str_count
+# This function is in the stringr package and simply counts the number of a specific 
+# character ("\\.") in a given string (indicator)
+# The \\ means to literally look for the '.' which means something else in this context.
+#This line will filter the data frame to leave only those with 4 pieces in the indicator.
+resultsGoodIndicator = results %>% filter(str_count(indicator,"\\.")==3)
+
+#Check out the new data frame with only 4 piece indicators
+resultsGoodIndicator$indicator
+
+# Break the indicator code up into 4 distinct columns. 
+resultsGoodIndicator = as.data.frame(resultsGoodIndicator) %>% separate(indicator,c("topic","general","specific","extension"))
+
+#plot the topic column in a bar chart to see the frequency of each topic.
+#compare the expenditure (NE) and the income (NY)
+resultsGoodIndicator %>% ggplot(aes(x = topic, fill = topic)) + geom_bar()
+
+
+
+#Goal 2: Plot GDP (NY and GDP) per capita (PCAP) of Mexico, Canada and the US in constant US dollars (KD)
+
+dat = WDI(indicator='NY.GDP.PCAP.KD', country=c('MX','CA','US'), start=1960, end=2012)
+
+head(dat)
+
+library(ggplot2)
+ggplot(dat, aes(x = year, y = NY.GDP.PCAP.KD, color=country)) + geom_line() + 
+  xlab('Year') + ylab('GDP per capita')
+
+########################################
+
+data <-getURL("http://api.worldbank.org/V2/incomeLevel/LIC/country")
+doc <- xmlParse(data)
+
+code <- xpathSApply(doc,"//wb:iso2Code",xmlValue)
+name <- xpathSApply(doc,"//wb:name",xmlValue)
+inclevel <- xpathSApply(doc,"//wb:incomeLevel",xmlValue)
+description <- xpathSApply(doc,"//description",xmlValue)
+bfasts = data.frame(names,price,description)
+bfasts
+bfasts$description
+length(grep("covered",bfasts$description))
+grepl("covered",bfasts$description)
+sum(grepl("covered",bfasts$description))
+which(grepl("covered",bfasts$description))
+
+#################################################
+
+#Intrinio
+# Andrew Carpenter helpful link: http://old.r-fiddle.org/#/fiddle?id=n1shL0IB&version=1
+#Show access through URL: https://api-v2.intrinio.com/companies/AAPL?api_key=OmIxMWI5NWY3MzM0ZjdmN2U3ODJlOTBhNmU3OGQ0Zjlk
+
+library(httr)
+library(jsonlite)
+username = "cc092ea39fffe74b69f12976f4bfcd22"
+password = "7a8adcf931edb0766ff36fbb0b5cc421"
+base <- "https://api.intrinio.com/"
+endpoint <- "prices"
+stock <- "INTC"
+call1 <- paste(base,endpoint,"?","ticker","=", stock, sep="")
+call1
+get_prices <- GET(call1, authenticate(username,password, type = "basic"))
+get_prices_text <- content(get_prices, "text")
+get_prices_json <- jsonlite::fromJSON(get_prices_text, flatten = TRUE)
+get_prices_df <- as.data.frame(get_prices_json$data)
+get_prices_df$date = as.Date(get_prices_df$date)
+par(mfrow = c(2,1))
+get_prices_df %>% ggplot(aes(x = date, y = adj_close))+ geom_line() + ggtitle("Adjusted Close")
+get_prices_df %>% ggplot(aes(x = date, y = adj_volume))+ geom_col() + ggtitle("Adjusted Volume")
+
+
+
+##########################################################################
+library(httr)
+library(jsonlite)
+
+Sandbox = "OjhlOGE0NzQ1NzcyMjcwYzkyZDU5NzlkYTdiMDIwMWZm"
+Production = "OjI5ODY1MzM4YjAzZTFmNjlmZjk5OWI5YzdjMTg4Mzg3"
+
+base <- "https://api-v2.intrinio.com/"
+stock <- "AAPL"
+endpoint <- "prices"
+
+call1 <- paste(base, "companies/", stock, "?", "api_key=", Sandbox, sep="")
+call2 <- paste(base, endpoint,"?","ticker","=", stock, sep="")
+
+call1
+call2
+
+# get_prices <- GET(call1, authenticate(username,password, type = "basic"))
+get_prices <- GET(call1)
+get_prices <- GET(call2)
+
+
+get_prices_text <- content(get_prices, "text")
+get_prices_json <- jsonlite::fromJSON(get_prices_text, flatten = TRUE)
+get_prices_df <- as.data.frame(get_prices_json$data)
+get_prices_df$date = as.Date(get_prices_df$date)
+par(mfrow = c(2,1))
+get_prices_df %>% ggplot(aes(x = date, y = adj_close))+ geom_line() + ggtitle("Adjusted Close")
+get_prices_df %>% ggplot(aes(x = date, y = adj_volume))+ geom_col() + ggtitle("Adjusted Volume")
+
+##################################################################
+
+
+# From Live Session - code
+
 
